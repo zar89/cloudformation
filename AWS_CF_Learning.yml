@@ -1,0 +1,317 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+
+
+  KDEVPC:                                   #creating VPC
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: 192.168.0.0/16             #scope of internal IPs
+      EnableDnsSupport: 'true'              #use AWS DNS instead of own ones
+      EnableDnsHostnames: 'false'           #give hostnames to rerources inside VPC
+      InstanceTenancy: default              #default or dedicated
+      Tags:
+      - Key: Name
+        Value: KDEVPC
+
+
+  KDEInternetGateway:                       #creating Internet gateway for the VPC
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: KDEInternetGateway
+  VPCandIGattachment:                       #VPC to Gateway attachment
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: 
+      InternetGatewayId: 
+      VpcId:
+        Ref: KDEVPC
+      InternetGatewayId:
+        Ref: KDEInternetGateway
+
+
+  SubnetPubA:                                #Public Subnet creation
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: KDEVPC
+      AvailabilityZone: "eu-west-2a"
+      CidrBlock: 192.168.1.0/24
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+      - Key: Name
+        Value: SubPubA
+  SubnetPubB:      
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: KDEVPC
+      AvailabilityZone: "eu-west-2b"
+      CidrBlock: 192.168.11.0/24
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+      - Key: Name
+        Value: SubPubB           
+  SubnetPubC:      
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: KDEVPC
+      AvailabilityZone: "eu-west-2c"
+      CidrBlock: 192.168.21.0/24
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+      - Key: Name
+        Value: SubPubC
+
+
+  SubnetPrivA:                                #Private Subnet creation      
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: KDEVPC
+      AvailabilityZone: "eu-west-2a"
+      CidrBlock: 192.168.2.0/24
+      MapPublicIpOnLaunch: 'false'
+      Tags:
+      - Key: Name
+        Value: SubPrivA
+  SubnetPrivB:      
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: KDEVPC
+      AvailabilityZone: "eu-west-2b"
+      CidrBlock: 192.168.12.0/24
+      MapPublicIpOnLaunch: 'false'
+      Tags:
+      - Key: Name
+        Value: SubPrivB           
+  SubnetPrivC:      
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: KDEVPC
+      AvailabilityZone: "eu-west-2c"
+      CidrBlock: 192.168.22.0/24
+      MapPublicIpOnLaunch: 'false'
+      Tags:
+      - Key: Name
+        Value: SubPrivC
+
+
+  SubnetDBA:                                #DB(internal isolated) Subnet creation      
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: KDEVPC
+      AvailabilityZone: "eu-west-2a"
+      CidrBlock: 192.168.3.0/24
+      MapPublicIpOnLaunch: 'false'
+      Tags:
+      - Key: Name
+        Value: SubDBA
+  SubnetDBB:      
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: KDEVPC
+      AvailabilityZone: "eu-west-2b"
+      CidrBlock: 192.168.13.0/24
+      MapPublicIpOnLaunch: 'false'
+      Tags:
+      - Key: Name
+        Value: SubDBB           
+  SubnetDBC:      
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: KDEVPC
+      AvailabilityZone: "eu-west-2c"
+      CidrBlock: 192.168.23.0/24
+      MapPublicIpOnLaunch: 'false'
+      Tags:
+      - Key: Name
+        Value: SubDBC
+
+
+  ElasticIPA:                                #ElasticIP creation
+    Type: AWS::EC2::EIP
+  ElasticIPB:
+    Type: AWS::EC2::EIP
+  ElasticIPC:
+    Type: AWS::EC2::EIP
+
+
+  NatA:                                      #NAT creation
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt ElasticIPA.AllocationId
+      SubnetId:
+        Ref: SubnetPubA
+      Tags:
+      - Key: Name
+        Value: NatGateA
+  NatB:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt ElasticIPB.AllocationId
+      SubnetId:
+        Ref: SubnetPubB
+      Tags:
+      - Key: Name
+        Value: NatGateB
+  NatC:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt ElasticIPC.AllocationId
+      SubnetId:
+        Ref: SubnetPubC
+      Tags:
+      - Key: Name
+        Value: NatGateC
+
+
+  RoutTabPub:                                 #Routing tables creation
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        Ref: KDEVPC
+      Tags:
+      - Key: Name
+        Value: RoutingTablePublic
+  RoutTabPrivA:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        Ref: KDEVPC
+      Tags:
+      - Key: Name
+        Value: RoutingTablePrivateA
+  RoutTabPrivB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        Ref: KDEVPC
+      Tags:
+      - Key: Name
+        Value: RoutingTablePrivateB
+  RoutTabPrivC:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        Ref: KDEVPC
+      Tags:
+      - Key: Name
+        Value: RoutingTablePrivateC
+  RoutTabDB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: 
+        Ref: KDEVPC
+      Tags:
+      - Key: Name
+        Value: RoutingTableDB
+
+
+  ExtRoute:                                   #Routes creating
+    Type: AWS::EC2::Route
+    DependsOn: RoutTabPub
+    Properties:
+      RouteTableId:
+        Ref: RoutTabPub
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: KDEInternetGateway
+  PrivRouteA:
+    Type: AWS::EC2::Route
+    DependsOn: RoutTabPrivA
+    Properties:
+      RouteTableId:
+        Ref: RoutTabPrivA
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NatA
+  PrivRouteB:
+    Type: AWS::EC2::Route
+    DependsOn: RoutTabPrivB
+    Properties:
+      RouteTableId:
+        Ref: RoutTabPrivB
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NatB
+  PrivRouteC:
+    Type: AWS::EC2::Route
+    DependsOn: RoutTabPrivC
+    Properties:
+      RouteTableId:
+        Ref: RoutTabPrivC
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NatC
+
+
+  PubSubRouteTableAssocA:                                   #Tables and subnets association
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetPubA
+      RouteTableId:
+        Ref: RoutTabPub
+  PubSubRouteTableAssocB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetPubB
+      RouteTableId:
+        Ref: RoutTabPub
+  PubSubRouteTableAssocC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetPubC
+      RouteTableId:
+        Ref: RoutTabPub
+  PrivSubRouteTableAssocA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetPrivA
+      RouteTableId:
+        Ref: RoutTabPrivA
+  PrivSubRouteTableAssocB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetPrivB
+      RouteTableId:
+        Ref: RoutTabPrivB
+  PrivSubRouteTableAssocC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetPrivC
+      RouteTableId:
+        Ref: RoutTabPrivC
+  DBSubRouteTableAssocA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetDBA
+      RouteTableId:
+        Ref: RoutTabDB
+  DBSubRouteTableAssocB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetDBB
+      RouteTableId:
+        Ref: RoutTabDB
+  DBSubRouteTableAssocC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetDBC
+      RouteTableId:
+        Ref: RoutTabDB
